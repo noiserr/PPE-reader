@@ -1,34 +1,40 @@
 package com.xdeveloper.ppereader
 
 import android.os.Bundle
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import com.jakewharton.retrofit2.adapter.kotlin.coroutines.experimental.CoroutineCallAdapterFactory
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.coroutines.experimental.android.UI
+import kotlinx.coroutines.experimental.launch
+import pl.droidsonroids.jspoon.annotation.Selector
+import pl.droidsonroids.retrofit2.JspoonConverterFactory
+import retrofit2.Retrofit
+
 
 class MainActivity : AppCompatActivity() {
-
-    private val mOnNavigationItemSelectedListener = BottomNavigationView.OnNavigationItemSelectedListener { item ->
-        when (item.itemId) {
-            R.id.navigation_home -> {
-                message.setText(R.string.title_home)
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_dashboard -> {
-                message.setText(R.string.title_dashboard)
-                return@OnNavigationItemSelectedListener true
-            }
-            R.id.navigation_notifications -> {
-                message.setText(R.string.title_notifications)
-                return@OnNavigationItemSelectedListener true
-            }
-        }
-        false
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        navigation.setOnNavigationItemSelectedListener(mOnNavigationItemSelectedListener)
+        launch(UI) {
+            val newsPage = createService().getNews().await()
+            message.text = newsPage.news.joinToString(separator = "\n"){
+                it.title ?: "elo"
+            }
+
+        }
+    }
+
+
+    private fun createService(): PpeService {
+        return Retrofit.Builder()
+                .baseUrl("https://www.ppe.pl/")
+                .addConverterFactory(JspoonConverterFactory.create())
+                .addCallAdapterFactory(CoroutineCallAdapterFactory())
+                .build()
+                .create(PpeService::class.java)
     }
 }
+
+
